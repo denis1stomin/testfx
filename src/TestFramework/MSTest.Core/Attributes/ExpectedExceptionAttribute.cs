@@ -7,6 +7,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
     using System.Diagnostics;
     using System.Globalization;
     using System.Reflection;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Attribute that specifies to expect an exception of the specified type
@@ -21,7 +22,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// </summary>
         /// <param name="exceptionType">Type of the expected exception</param>
         public ExpectedExceptionAttribute(Type exceptionType)
-            : this(exceptionType, string.Empty)
+            : this(exceptionType, string.Empty, string.Empty)
         {
         }
 
@@ -34,7 +35,24 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// Message to include in the test result if the test fails due to not throwing an exception
         /// </param>
         public ExpectedExceptionAttribute(Type exceptionType, string noExceptionMessage)
-            : base(noExceptionMessage)
+            : this(exceptionType, string.Empty, noExceptionMessage)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExpectedExceptionAttribute"/> class with
+        /// the expected type and the message to include when no exception is thrown by the test.
+        /// </summary>
+        /// <param name="exceptionType">Type of the expected exception</param>
+        /// <param name="exceptionMessageRegex">
+        /// Regular expression which should be used to verify the message of a thrown exception
+        /// </param>
+        /// <param name="noExceptionMessage">
+        /// Message to include in the test result if the test fails due to not throwing an exception
+        /// </param>
+        public ExpectedExceptionAttribute(
+            Type exceptionType, string exceptionMessageRegex, string noExceptionMessage))
+            : base(noExceptionMessage, exceptionMessageRegex)
         {
             if (exceptionType == null)
             {
@@ -101,6 +119,14 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         {
             Debug.Assert(exception != null, "'exception' is null");
 
+            VerifyExceptionType(exception);
+
+            if (NeedToVerifyExceptionMessage())
+                VerifyExceptionMessage(exception);
+        }
+
+        private internal void VerifyExceptionType(Exception exception)
+        {
             Type thrownExceptionType = exception.GetType();
             if (this.AllowDerivedTypes)
             {
@@ -135,6 +161,35 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
                         UtfHelper.GetExceptionMsg(exception));
                     throw new Exception(message);
                 }
+            }
+        }
+
+        private internal bool NeedToVerifyExceptionMessage()
+        {
+            return !string.IsNullOrEmpty(this.SpecifiedExceptionMessageRegex);
+        }
+
+        private internal void VerifyExceptionMessage(Exception exception)
+        {
+            Debug.Assert(this.SpecifiedExceptionMessageRegex != null, "'this.SpecifiedExceptionMessageRegex' is null");
+
+            //if (exception.Message == null)
+
+            RegexOptions regexOptions = RegexOptions.CultureInvariant;
+            TimeSpan timeout = TimeSpan.FromSeconds(3);     // TODO : 
+            bool isMatch = Regex.IsMatch(
+                exception.Message, this.SpecifiedExceptionMessageRegex, regexOptions, timeout);
+
+            if (!isMatch)
+            {
+                // TODO
+                string message = string.Format(
+                    CultureInfo.CurrentCulture,
+                    FrameworkMessages.UTF_TestMethodWrongException,
+                    thrownExceptionType.FullName,
+                    this.ExceptionType.FullName,
+                    UtfHelper.GetExceptionMsg(exception));
+                throw new Exception(message);
             }
         }
 

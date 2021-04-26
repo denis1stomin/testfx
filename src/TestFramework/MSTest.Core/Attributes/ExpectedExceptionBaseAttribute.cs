@@ -17,26 +17,49 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExpectedExceptionBaseAttribute"/> class with a default no-exception message
+        /// and empty exception-message regex
         /// </summary>
         protected ExpectedExceptionBaseAttribute()
-            : this(string.Empty)
+            : this(string.Empty, string.Empty)
         {
             this.SpecifiedNoExceptionMessage = string.Empty;
+
+            this.SpecifiedExceptionMessageRegex = string.Empty;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExpectedExceptionBaseAttribute"/> class with a no-exception message
+        /// and empty exception-message regex
         /// </summary>
         /// <param name="noExceptionMessage">
         /// Message to include in the test result if the test fails due to not throwing an
         /// exception
         /// </param>
         protected ExpectedExceptionBaseAttribute(string noExceptionMessage)
+            : this(string.Empty, noExceptionMessage)
+        {
+            this.SpecifiedExceptionMessageRegex = string.Empty;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExpectedExceptionBaseAttribute"/> class with a no-exception message
+        /// and a regular expression to verify against the message of a thrown exception
+        /// </summary>
+        /// <param name="noExceptionMessage">
+        /// Message to include in the test result if the test fails due to not throwing an
+        /// exception
+        /// </param>
+        /// <param name="exceptionMessageRegex">
+        /// Regular expression which should be used to verify the message of a thrown exception
+        /// </param>
+        protected ExpectedExceptionBaseAttribute(string noExceptionMessage, string exceptionMessageRegex)
         {
             this.SpecifiedNoExceptionMessage =
                 noExceptionMessage == null ?
                     string.Empty :
                     noExceptionMessage.Trim();
+            
+            this.SpecifiedExceptionMessageRegex = exceptionMessageRegex;
         }
 
         #endregion
@@ -63,6 +86,11 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
                 return this.SpecifiedNoExceptionMessage;
             }
         }
+
+        /// <summary>
+        /// Regular expression which should be used to verify the message of a thrown exception
+        /// </summary>
+        protected string SpecifiedExceptionMessageRegex { get; private set; }
 
         /// <summary>
         /// Gets the message to include in the test result if the test fails due to not throwing an exception
